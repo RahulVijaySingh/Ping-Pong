@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ping Pong Game</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+      canvas {
+        background: #eee;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid #000;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const socket = io();
+
+      let gameState = {};
+
+      socket.on("update", (state) => {
+        gameState = state;
+        render();
+      });
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw paddles
+        ctx.fillStyle = "blue";
+        ctx.fillRect(10, gameState.paddle1.y, 10, 100);
+        ctx.fillStyle = "red";
+        ctx.fillRect(780, gameState.paddle2.y, 10, 100);
+
+        // Draw ball
+        ctx.beginPath();
+        ctx.arc(gameState.ball.x, gameState.ball.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = "black";
+        ctx.fill();
+        ctx.closePath();
+
+        // Draw obstacles
+        ctx.fillStyle = "green";
+        gameState.obstacles.forEach((obs) => {
+          ctx.fillRect(obs.x, obs.y, obs.size, obs.size);
+        });
+
+        // Draw scores
+        ctx.font = "20px Arial";
+        ctx.fillText(`Player 1: ${gameState.score.player1}`, 20, 20);
+        ctx.fillText(`Player 2: ${gameState.score.player2}`, 650, 20);
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "w")
+          socket.emit("move_paddle", { player: 1, direction: "up" });
+        if (e.key === "s")
+          socket.emit("move_paddle", { player: 1, direction: "down" });
+        if (e.key === "ArrowUp")
+          socket.emit("move_paddle", { player: 2, direction: "up" });
+        if (e.key === "ArrowDown")
+          socket.emit("move_paddle", { player: 2, direction: "down" });
+      });
+
+      setInterval(() => {
+        socket.emit("update_ball");
+      }, 30);
+    </script>
+  </body>
+</html>
